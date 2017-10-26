@@ -38,7 +38,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f4xx_hal.h"
-
+#include "math.h"
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -50,9 +50,13 @@ TIM_HandleTypeDef htim2;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+#define N 10
 float refresh_time = 0.1;
-uint32_t ADC2_value;
-float actualValue;
+float sum = 0;
+int n = N;
+int sumIndex = 0;
+signed char adcBuff[N];
+float rmsValue = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -253,7 +257,16 @@ int resetLED() {
 		HAL_Delay(refresh_time);
 	return 0;
 }
-
+int calculateRMS(){
+	float temp = 0;
+	for( int i = 0; i < n; i++){
+	 temp = 3.0*(float)adcBuff[i]/255.0;
+	 sum = sum + temp*temp;
+	}
+	temp = sum/n;
+	rmsValue = sqrt(temp);
+	return 0;
+}
 /* USER CODE END 0 */
 
 int main(void)
@@ -294,7 +307,7 @@ int main(void)
   while (1)
   {
   /* USER CODE END WHILE */
-	showDigits(actualValue);
+	showDigits(rmsValue);
   /* USER CODE BEGIN 3 */
 
   }
@@ -302,9 +315,13 @@ int main(void)
 
 }
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim2) {
-HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
-ADC2_value = HAL_ADC_GetValue(&hadc2);
-actualValue = 3.0*(float)ADC2_value/255.0;
+	if(sumIndex == n){
+		sumIndex = 0;
+		calculateRMS();	
+	} else {
+	 adcBuff[sumIndex] = HAL_ADC_GetValue(&hadc2);
+	 sumIndex = sumIndex + 1;
+	}
 }
 /** System Clock Configuration
 */
