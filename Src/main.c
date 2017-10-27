@@ -38,7 +38,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f4xx_hal.h"
-#include "math.h"
+#include <math.h>
+#include <float.h>
 
 /* USER CODE BEGIN Includes */
 
@@ -230,7 +231,8 @@ void useDigit(int digit){
 }
 
 // showDigits takes in a float number and displays the invidual digits accordingly.
-int showDigits(float digits) { // Digits = 12.34
+int showDigits(float digits) { 
+	// Digits = 12.34
 	int temp;
   temp = (int)(digits * 100); // temp = 1234							
   useDigit(1);
@@ -268,8 +270,19 @@ int resetLED() {
 	return 0;
 }
 
+void safe_add() {
+		// a = val_A
+		// b = buffer[pos];
+    if (val_A > 0 && buffer[pos] > FLT_MAX - val_A) {
+        /* handle overflow */
+				val_A = val_A - buffer[pos+1]*buffer[pos-1] - buffer[pos+2]*buffer[pos-2];
+				buffer[pos] = buffer[pos-1];
+		}
+}
+
 // calculate Vrms from adc value
 void calculateRMS(){
+	// read adc pin
 	ADC2_value = HAL_ADC_GetValue(&hadc2);
 	adcVal = 3.0*ADC2_value/255.0;
 	
@@ -289,6 +302,7 @@ void calculateRMS(){
 		displayIndex = displayIndex+1;
 		val_A = val_A - buffer[pos]*buffer[pos];
 		buffer[pos] = adcVal;
+		safe_add();
 		val_A = val_A + buffer[pos]*buffer[pos];
 		counter = (counter+1) % window;
 	}
