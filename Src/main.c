@@ -38,6 +38,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f4xx_hal.h"
+#include "math.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -52,7 +53,14 @@ TIM_HandleTypeDef htim2;
 /* Private variables ---------------------------------------------------------*/
 float refresh_time = 0.1;
 uint32_t ADC2_value;
-float actualValue;
+float adcVal;
+int window = 10;
+float val_A;
+float vrms;
+float buffer[10];
+int isFull;
+int counter;
+int pos;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -185,7 +193,7 @@ int segmentDecoder( int value ) {
 return 0;
 }
 // Given 4 avaiable digit slots on the LED, useDigit selects which slot to turn on (1 to 4).
-int useDigit(int digit){
+void useDigit(int digit){
 if ( digit == 1 ){
 		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_7, GPIO_PIN_RESET);
 		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_RESET);		
@@ -214,6 +222,7 @@ else if ( digit == 4 ) {
 		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_3, GPIO_PIN_RESET);	
 }
+
 }
 
 // showDigits takes in a float number and displays the invidual digits accordingly.
@@ -287,6 +296,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 	HAL_TIM_Base_Start_IT(&htim2);
 	HAL_ADC_Start(&hadc2);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -294,17 +304,36 @@ int main(void)
   while (1)
   {
   /* USER CODE END WHILE */
-	showDigits(actualValue);
   /* USER CODE BEGIN 3 */
-
+	showDigits(vrms);
   }
   /* USER CODE END 3 */
 
 }
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim2) {
-HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
-ADC2_value = HAL_ADC_GetValue(&hadc2);
-actualValue = 3.0*(float)ADC2_value/255.0;
+	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
+	
+	ADC2_value = HAL_ADC_GetValue(&hadc2);
+	adcVal = 3.0*(float)ADC2_value/255.0;
+	
+	if (counter < window && isFull != window) {
+		buffer[counter] = adcVal;
+		val_A = val_A + buffer[counter]*buffer[counter];
+		counter += 1;
+		isFull += 1;		
+	}
+	else {
+		pos = counter % window;
+		vrms = sqrt(val_A/window);
+		val_A = val_A - buffer[pos]*buffer[pos];
+		buffer[pos] = adcVal;
+		counter = (counter+1)%window;
+		val_A = val_A + buffer[pos]*buffer[pos];
+	}
+	
+	
+	
+	
 }
 /** System Clock Configuration
 */
