@@ -48,19 +48,24 @@
 ADC_HandleTypeDef hadc2;
 
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim3;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+#define WindowSize 1000
+#define FILTERSIZE 3
 float refresh_time = 0.1;
 uint32_t ADC2_value;
 float adcVal;
-int window = 10;
+int window = WindowSize;
 float val_A;
 float vrms;
-float buffer[10];
+float buffer[WindowSize];
 int isFull;
 int counter;
 int pos;
+int displayIndex = 0;
+float rmsDisplay[FILTERSIZE]={0};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -68,6 +73,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_ADC2_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_TIM3_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -262,7 +268,36 @@ int resetLED() {
 		HAL_Delay(refresh_time);
 	return 0;
 }
-
+void calculateRMS(){
+	ADC2_value = HAL_ADC_GetValue(&hadc2);
+	adcVal = 3.0*(float)ADC2_value/255.0;
+	
+	if (counter < window && isFull != window) {
+		buffer[counter] = adcVal;
+		val_A = val_A + buffer[counter]*buffer[counter];
+		counter += 1;
+		isFull += 1;		
+	}
+	else {
+		pos = counter % window;
+		vrms = sqrt(val_A/window);
+		displayIndex = displayIndex % FILTERSIZE;
+		rmsDisplay[displayIndex] = vrms;
+		displayIndex = displayIndex+1;
+		val_A = val_A - buffer[pos]*buffer[pos];
+		buffer[pos] = adcVal;
+		val_A = val_A + buffer[pos]*buffer[pos];
+		counter = (counter+1)%window;
+	}
+}
+float calculateMean(){
+ float mean =0;
+for (int i=0;i<FILTERSIZE;i++){
+mean = mean + rmsDisplay[i];
+}
+mean = mean/FILTERSIZE;
+return mean;
+}
 /* USER CODE END 0 */
 
 int main(void)
@@ -292,9 +327,11 @@ int main(void)
   MX_GPIO_Init();
   MX_ADC2_Init();
   MX_TIM2_Init();
+  MX_TIM3_Init();
 
   /* USER CODE BEGIN 2 */
 	HAL_TIM_Base_Start_IT(&htim2);
+	HAL_TIM_Base_Start_IT(&htim3);
 	HAL_ADC_Start(&hadc2);
 
   /* USER CODE END 2 */
@@ -304,36 +341,24 @@ int main(void)
   while (1)
   {
   /* USER CODE END WHILE */
+
   /* USER CODE BEGIN 3 */
-	showDigits(vrms);
+	showDigits(calculateMean());
   }
   /* USER CODE END 3 */
 
 }
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim2) {
-	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
-	
-	ADC2_value = HAL_ADC_GetValue(&hadc2);
-	adcVal = 3.0*(float)ADC2_value/255.0;
-	
-	if (counter < window && isFull != window) {
-		buffer[counter] = adcVal;
-		val_A = val_A + buffer[counter]*buffer[counter];
-		counter += 1;
-		isFull += 1;		
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+//if (htim == &htim2){
+//		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
+//}
+	if (htim == &htim2) {
+	calculateRMS();
 	}
-	else {
-		pos = counter % window;
-		vrms = sqrt(val_A/window);
-		val_A = val_A - buffer[pos]*buffer[pos];
-		buffer[pos] = adcVal;
-		counter = (counter+1)%window;
-		val_A = val_A + buffer[pos]*buffer[pos];
-	}
-	
-	
-	
-	
+	//Generate SquareWave with frequency ~50Hz
+ if(htim == &htim3) {
+		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
+}
 }
 /** System Clock Configuration
 */
@@ -454,6 +479,38 @@ static void MX_TIM2_Init(void)
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
+/* TIM3 init function */
+static void MX_TIM3_Init(void)
+{
+
+  TIM_ClockConfigTypeDef sClockSourceConfig;
+  TIM_MasterConfigTypeDef sMasterConfig;
+
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 6250;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 9;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
