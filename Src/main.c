@@ -53,9 +53,10 @@ TIM_HandleTypeDef htim3;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 #define WindowSize 1000
-#define FILTERSIZE 3
-float refresh_time = 0.1;
+#define FILTERSIZE 5
+
 uint32_t ADC2_value;
+float refresh_time = 0.1;
 float adcVal;
 int window = WindowSize;
 float val_A;
@@ -64,8 +65,8 @@ float buffer[WindowSize];
 int isFull;
 int counter;
 int pos;
-int displayIndex = 0;
 float rmsDisplay[FILTERSIZE]={0};
+int displayIndex = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -92,8 +93,7 @@ int segmentDecoder( int value ) {
 	F = PE13
 	G = PE14
 	*/
-	if ( value == 0 ){
-			
+	if ( value == 0 ) {
 		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_8, GPIO_PIN_SET); // A
 		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_9, GPIO_PIN_SET); // B
 		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_10, GPIO_PIN_SET); // C
@@ -103,7 +103,6 @@ int segmentDecoder( int value ) {
 		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_14, GPIO_PIN_RESET); // G
 	}
 	else if ( value == 1) {
-		
 		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_8, GPIO_PIN_RESET); // A
 		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_9, GPIO_PIN_SET); // B
 		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_10, GPIO_PIN_SET); // C
@@ -111,10 +110,8 @@ int segmentDecoder( int value ) {
 		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_12, GPIO_PIN_RESET); // E
 		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_13, GPIO_PIN_RESET); // F
 		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_14, GPIO_PIN_RESET); // G
-	
 	}
 	else if ( value == 2) {
-	
 		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_8, GPIO_PIN_SET); // A
 		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_9, GPIO_PIN_SET); // B
 		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_10, GPIO_PIN_RESET); // C
@@ -196,62 +193,64 @@ int segmentDecoder( int value ) {
 		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_13, GPIO_PIN_RESET); // F
 		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_14, GPIO_PIN_RESET); // G
 	}
-return 0;
+	return 0;
 }
+
 // Given 4 avaiable digit slots on the LED, useDigit selects which slot to turn on (1 to 4).
 void useDigit(int digit){
-if ( digit == 1 ){
-		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_7, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_RESET);		
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_1, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_3, GPIO_PIN_SET);
-}
-else if ( digit == 2 ) {
-	  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_7, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_SET);		
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_1, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_3, GPIO_PIN_SET);	
-}
-else if ( digit == 3 ) {
-		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_7, GPIO_PIN_RESET);
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_SET);		
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_1, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_3, GPIO_PIN_SET);	
-}
-else if ( digit == 4 ) {
-		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_7, GPIO_PIN_RESET);		
-  	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_SET);		
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_1, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_3, GPIO_PIN_RESET);	
-}
+	if ( digit == 1 ){
+			HAL_GPIO_WritePin(GPIOE, GPIO_PIN_7, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_RESET);		
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_1, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_3, GPIO_PIN_SET);
+	}
+	else if ( digit == 2 ) {
+			HAL_GPIO_WritePin(GPIOE, GPIO_PIN_7, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_SET);		
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_1, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_3, GPIO_PIN_SET);	
+	}
+	else if ( digit == 3 ) {
+			HAL_GPIO_WritePin(GPIOE, GPIO_PIN_7, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_SET);		
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_1, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_3, GPIO_PIN_SET);	
+	}
+	else if ( digit == 4 ) {
+			HAL_GPIO_WritePin(GPIOE, GPIO_PIN_7, GPIO_PIN_RESET);		
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_SET);		
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_1, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_3, GPIO_PIN_RESET);	
+	}
 
 }
 
 // showDigits takes in a float number and displays the invidual digits accordingly.
-int showDigits(float digits){						// Digits = 12.34
-			int temp;
-			temp = (int)(digits * 100);			// temp = 1234							
-			useDigit(1);
-			segmentDecoder(temp / 1000);    // 1234/1000 = 1
-			HAL_Delay(refresh_time);
-			useDigit(2);
-			temp = temp % 1000;            // 1234 mod 1000 = 234
-			segmentDecoder(temp/100);        // 234 / 100 = 2
-			HAL_Delay(refresh_time);
-			useDigit(3);
-			temp = temp % 100;             // 234 mod 100 = 34
-			segmentDecoder(temp/10);         // 34 / 10 = 3
-			HAL_Delay(refresh_time);
-			useDigit(4); 
-			temp = temp % 10;              // 34 mod 10 = 4	
-			segmentDecoder(temp);            //  4
-			HAL_Delay(refresh_time);
-			return 0;
+int showDigits(float digits) { // Digits = 12.34
+	int temp;
+  temp = (int)(digits * 100); // temp = 1234							
+  useDigit(1);
+  segmentDecoder(temp / 1000); // 1234/1000 = 1
+  HAL_Delay(refresh_time);
+  useDigit(2);
+  temp = temp % 1000; // 1234 mod 1000 = 234
+  segmentDecoder(temp / 100); // 234 / 100 = 2
+  HAL_Delay(refresh_time);
+  useDigit(3);
+  temp = temp % 100; // 234 mod 100 = 34
+  segmentDecoder(temp / 10); // 34 / 10 = 3
+  HAL_Delay(refresh_time);
+  useDigit(4);
+  temp = temp % 10; // 34 mod 10 = 4	
+  segmentDecoder(temp); //  4
+  HAL_Delay(refresh_time);
+  return 0;
 }
+
 //Reset all digit slots
 int resetLED() {
 		useDigit(1);
@@ -268,16 +267,20 @@ int resetLED() {
 		HAL_Delay(refresh_time);
 	return 0;
 }
+
+// calculate Vrms from adc value
 void calculateRMS(){
 	ADC2_value = HAL_ADC_GetValue(&hadc2);
-	adcVal = 3.0*(float)ADC2_value/255.0;
+	adcVal = 3.0*ADC2_value/255.0;
 	
+	// fill the buffer until it's full
 	if (counter < window && isFull != window) {
 		buffer[counter] = adcVal;
 		val_A = val_A + buffer[counter]*buffer[counter];
 		counter += 1;
 		isFull += 1;		
 	}
+	// if buffer is full, calculate Vrms
 	else {
 		pos = counter % window;
 		vrms = sqrt(val_A/window);
@@ -287,16 +290,20 @@ void calculateRMS(){
 		val_A = val_A - buffer[pos]*buffer[pos];
 		buffer[pos] = adcVal;
 		val_A = val_A + buffer[pos]*buffer[pos];
-		counter = (counter+1)%window;
+		counter = (counter+1) % window;
 	}
 }
-float calculateMean(){
- float mean =0;
-for (int i=0;i<FILTERSIZE;i++){
-mean = mean + rmsDisplay[i];
-}
-mean = mean/FILTERSIZE;
-return mean;
+
+// calculate mean of Vrms in rms buffer
+float calculateMean() {
+	float mean =0;
+	
+	for (int i=0;i<FILTERSIZE;i++){
+		mean = mean + rmsDisplay[i];
+	}
+	mean = mean/FILTERSIZE;
+	
+	return mean;
 }
 /* USER CODE END 0 */
 
@@ -343,22 +350,27 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-	showDigits(calculateMean());
+		showDigits(calculateMean());
   }
   /* USER CODE END 3 */
 
 }
+
+// we have 2 timers with different frequency
+// htim2 for adc and htim3 for signal generation
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-//if (htim == &htim2){
-//		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
-//}
+	/* use below commented code to measure actual frequency of htim2
+	if (htim == &htim2){
+			HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
+	}
+	*/
 	if (htim == &htim2) {
-	calculateRMS();
+		calculateRMS();
 	}
 	//Generate SquareWave with frequency ~50Hz
- if(htim == &htim3) {
+	if(htim == &htim3) {
 		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
-}
+	}
 }
 /** System Clock Configuration
 */
